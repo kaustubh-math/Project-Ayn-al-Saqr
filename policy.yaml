@@ -1,0 +1,23 @@
+# Ayn al-Saqr - task-scoped agent policy.
+# This file is re-read on every gateway call, so edits take effect without a restart.
+
+tasks:
+  renew_permit:
+    description: "Read a permit and renew it for a citizen."
+    scopes:
+      - "permits:read"
+      - "permits:update"
+
+  summarise_case_file:
+    description: "Read one case file and summarise it. Nothing else."
+    scopes:
+      - "case_files:read"
+
+# A denial that touches one of these resources is treated as a likely hijack.
+critical_resources:
+  - "citizens"
+
+thresholds:
+  max_calls_per_minute: 30
+  max_denies_per_task: 3
+  kill_on_critical_denied: true

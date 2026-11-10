@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayn al-Saqr | عين الصقر — Task Firewall</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 56 13v19c0 14-10 23-24 28C18 55 8 46 8 32V13Z' fill='%230b1017' stroke='%23e8b64c' stroke-width='3'/%3E%3Cpath d='M15 32c6-8 28-8 34 0-6 8-28 8-34 0Z' fill='none' stroke='%23e8b64c' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23e8b64c'/%3E%3C/svg%3E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&display=swap');
+  
+
+  :root {
+    --bg: #05080d;
+    --bg-soft: #070c13;
+    --panel: #0a1119;
+    --panel-2: #0d1621;
+    --panel-3: #101c29;
+    --line: #1a2a3a;
+    --line-bright: #274056;
+    --text: #e8eef6;
+    --muted: #bac5d1;
+    --dim: #ffffff;
+    --gold: #df0000;
+    --gold-soft: #f4d68f;
+    --green: #2ad9a4;
+    --green-dim: #0f4d3d;
+    --red: #ff4d63;
+    --red-soft: #ff8998;
+    --cyan: #58c7f0;
+    --mono: "Cascadia Mono", "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --sans: "Roboto", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --radius: 0px;
+    --shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    font-family: var(--sans);
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(232, 182, 76, .07), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, rgba(88, 199, 240, .05), transparent 60%),
+      linear-gradient(180deg, #05080d 0%, #05080d 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .017) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, .017) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,.55), transparent 70%);
+    z-index: 0;
+  }
+  .mono { font-family: var(--mono); }
+  .hidden { display: none !important; }
+
+  /* ---------------- Header ---------------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 14px 26px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(6, 10, 15, .86);
+    backdrop-filter: blur(14px);
+  }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .brand-mark { width: 80px;
+    object-fit: contain; 
+    height: 80px; 
+    flex: 0 0 auto; filter: drop-shadow(0 0 12px rgba(232, 182, 76, .25)); }
+  .brand h1 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: .01em;
+    font-weight: 650;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .brand h1 .ar {
+    font-weight: 700;
+    color: var(--gold);
+    margin-left: 6px;
+    font-size: 20px;
+  }
+  .brand p {
+    margin: 3px 0 0;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    border: 1px solid var(--line);
+    border-radius: 0px;
+    background: rgba(255, 255, 255, .02);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
+  .pill.live { color: var(--green); border-color: rgba(42, 217, 164, .35); background: rgba(42, 217, 164, .07); }
+  .pill.live .dot { background: var(--green); box-shadow: 0 0 0 0 rgba(42, 217, 164, .6); animation: livePulse 2s infinite; }
+  .pill.offline { color: var(--red); border-color: rgba(255, 77, 99, .35); background: rgba(255, 77, 99, .07); }
+  .pill.offline .dot { background: var(--red); }
+  #clock { color: var(--muted); }
+
+  @keyframes livePulse {
+    0% { box-shadow: 0 0 0 0 rgba(42, 217, 164, .5); }
+    70% { box-shadow: 0 0 0 7px rgba(42, 217, 164, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(42, 217, 164, 0); }
+  }
+
+  .shell { position: relative; z-index: 1; max-width: 1560px; margin: 0 auto; padding: 20px 26px 40px; }
+
+  /* ---------------- Kill banner ---------------- */
+  .kill-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 77, 99, .55);
+    border-left: 4px solid var(--red);
+    border-radius: var(--radius);
+    background:
+      linear-gradient(90deg, rgba(255, 77, 99, .18), rgba(255, 77, 99, .05)),
+      var(--panel);
+    box-shadow: 0 0 40px rgba(255, 77, 99, .13);
+    animation: killPulse 1.4s ease-out 1;
+  }
+  @keyframes killPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 77, 99, .45); }
+    70% { box-shadow: 0 0 0 16px rgba(255, 77, 99, 0); }
+    100% { box-shadow: 0 0 40px rgba(255, 77, 99, .13); }
+  }
+  .kill-icon {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 77, 99, .6);
+    background: rgba(255, 77, 99, .14);
+    color: var(--red);
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 19px;
+  }
+  .kill-copy { min-width: 0; flex: 1; }
+  .kill-copy strong {
+    display: block;
+    font-size: 15px;
+    letter-spacing: .01em;
+    color: #fff;
+  }
+  .kill-copy span {
+    display: block;
+    margin-top: 3px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---------------- Stat tiles ---------------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    position: relative;
+    overflow: hidden;
+    padding: 14px 16px 15px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  }
+  .stat::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold), transparent 80%);
+    opacity: .55;
+  }
+  .stat.is-green::after { background: linear-gradient(90deg, var(--green), transparent 80%); }
+  .stat.is-red::after { background: linear-gradient(90deg, var(--red), transparent 80%); }
+  .stat.is-cyan::after { background: linear-gradient(90deg, var(--cyan), transparent 80%); }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-value {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value .unit { font-size: 12px; color: var(--dim); margin-left: 3px; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-sub { margin-top: 6px; font-size: 10.5px; color: var(--dim); }
+
+  /* ---------------- Layout & panels ---------------- */
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(300px, 370px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--panel-2), var(--panel) 60%);
+    box-shadow: var(--shadow);
+    min-width: 0;
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .panel-title::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--gold);
+    box-shadow: 0 0 10px rgba(232, 182, 76, .6);
+  }
+  .panel-title.is-green::before { background: var(--green); box-shadow: 0 0 10px rgba(42, 217, 164, .6); }
+  .panel-title.is-red::before { background: var(--red); box-shadow: 0 0 10px rgba(255, 77, 99, .6); }
+  .panel-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+  .panel-body { padding: 14px 16px 16px; }
+
+  /* ---------------- Agents ---------------- */
+  #agentCards { display: grid; gap: 12px; }
+  .agent-card {
+    position: relative;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--green);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .015);
+  }
+  .agent-card.is-revoked {
+    border-left-color: var(--red);
+    background: linear-gradient(90deg, rgba(255, 77, 99, .07), rgba(255, 255, 255, .01));
+  }
+  .agent-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .agent-name h3 { margin: 0; font-size: 14.5px; font-weight: 650; letter-spacing: .01em; }
+  .agent-id {
+    margin-top: 3px;
+    font-size: 10.5px;
+    color: var(--dim);
+    letter-spacing: .04em;
+  }
+  .agent-dept { margin-top: 8px; font-size: 11px; color: var(--muted); }
+  .badge {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .14em;
+    font-weight: 600;
+  }
+  .badge.ok { color: var(--green); background: rgba(42, 217, 164, .1); border: 1px solid rgba(42, 217, 164, .35); }
+  .badge.bad { color: var(--red); background: rgba(255, 77, 99, .12); border: 1px solid rgba(255, 77, 99, .45); }
+  .agent-meta {
+    display: grid;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px dashed var(--line);
+  }
+  .meta-row { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+  .meta-row dt {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .meta-row dd {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .meta-row dd.mono { font-size: 10.5px; color: var(--muted); }
+  .revoked-reason {
+    margin-top: 10px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 77, 99, .3);
+    background: rgba(255, 77, 99, .07);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--red-soft);
+    word-break: break-word;
+  }
+  .agent-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+  /* ---------------- Buttons ---------------- */
+  .btn {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 9px 13px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .12s ease, filter .12s ease, background .12s ease, border-color .12s ease;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { filter: brightness(1.12); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.small { padding: 7px 10px; font-size: 9.5px; }
+  .btn-primary {
+    background: linear-gradient(180deg, #f4d68f, #d4a63f);
+    color: #1a1206;
+    border-color: rgba(255, 255, 255, .18);
+  }
+  .btn-ghost {
+    background: rgba(255, 255, 255, .025);
+    border-color: var(--line-bright);
+    color: var(--text);
+  }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--muted); }
+  .btn-danger-ghost {
+    background: rgba(255, 77, 99, .07);
+    border-color: rgba(255, 77, 99, .4);
+    color: var(--red-soft);
+  }
+  .btn-danger-ghost:hover:not(:disabled) { background: rgba(255, 77, 99, .14); }
+  .btn-attack {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 18px;
+    font-size: 12px;
+    letter-spacing: .13em;
+    color: #fff;
+    border: 1px solid rgba(255, 149, 163, .5);
+    background:
+      linear-gradient(180deg, rgba(255, 119, 136, .95), rgba(196, 28, 50, .95));
+    box-shadow: 0 8px 30px rgba(255, 77, 99, .22), inset 0 1px 0 rgba(255, 255, 255, .2);
+    animation: attackBreath 3.2s ease-in-out infinite;
+  }
+  .btn-attack:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn-attack:disabled { animation: none; }
+  @keyframes attackBreath {
+    0%, 100% { box-shadow: 0 8px 30px rgba(255, 77, 99, .18), inset 0 1px 0 rgba(255, 255, 255, .18); }
+    50% { box-shadow: 0 8px 38px rgba(255, 77, 99, .38), inset 0 1px 0 rgba(255, 255, 255, .22); }
+  }
+  .attack-glyph {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, .55);
+    font-size: 13px;
+    line-height: 1;
+  }
+  .controls { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--line); }
+  .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; }
+  .control-note { margin-top: 9px; font-size: 10.5px; line-height: 1.5; color: var(--dim); }
+
+  /* ---------------- Feed ---------------- */
+  .feed-panel { min-height: 520px; }
+  .feed {
+    height: min(56vh, 560px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-bright) transparent;
+  }
+  .feed::-webkit-scrollbar { width: 8px; }
+  .feed::-webkit-scrollbar-thumb { background: var(--line-bright); border-radius: 4px; }
+  .feed-head, .feed-row {
+    display: grid;
+    grid-template-columns: 64px 118px minmax(110px, 1fr) 62px minmax(100px, 1.25fr) 66px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+  }
+  .feed-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--dim);
+    font-size: 8.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+  .feed-row { border-bottom: 1px solid rgba(26, 42, 58, .55); color: var(--muted); }
+  .feed-row:hover { background: rgba(255, 255, 255, .02); }
+  .feed-row .f-time { color: var(--dim); }
+  .feed-row .f-agent { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-row .f-call { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-row .f-reason { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-row .f-lat { text-align: right; color: var(--dim); }
+  .decision {
+    display: inline-block;
+    padding: 3px 0;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 9px;
+    letter-spacing: .12em;
+    font-weight: 700;
+  }
+  .decision.allow { color: var(--green); background: rgba(42, 217, 164, .09); border: 1px solid rgba(42, 217, 164, .25); }
+  .decision.deny { color: var(--red); background: rgba(255, 77, 99, .1); border: 1px solid rgba(255, 77, 99, .38); }
+  .feed-row.is-deny { background: rgba(255, 77, 99, .035); }
+  .feed-row.is-deny .f-call { color: var(--red-soft); }
+  .feed-row.is-kill {
+    animation: rowFlash 1.6s ease-out 1;
+    border-left: 3px solid var(--red);
+    padding-left: 13px;
+  }
+  @keyframes rowFlash {
+    0% { background: rgba(255, 77, 99, .32); }
+    100% { background: rgba(255, 77, 99, .06); }
+  }
+  .feed-empty, .audit-empty {
+    padding: 44px 20px;
+    text-align: center;
+    color: var(--dim);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .feed-empty strong, .audit-empty strong { color: var(--muted); font-weight: 600; }
+
+  /* ---------------- Audit ---------------- */
+  .audit-panel { grid-column: 1 / -1; }
+  .audit-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chain-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 16px 0;
+    padding: 10px 13px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .02);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .05em;
+    color: var(--muted);
+  }
+  .chain-banner::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dim);
+    flex: 0 0 auto;
+  }
+  .chain-banner.valid {
+    color: var(--green);
+    border-color: rgba(42, 217, 164, .4);
+    background: rgba(42, 217, 164, .08);
+  }
+  .chain-banner.valid::before { background: var(--green); box-shadow: 0 0 10px rgba(42, 217, 164, .8); }
+  .chain-banner.broken {
+    color: var(--red-soft);
+    border-color: rgba(255, 77, 99, .45);
+    background: rgba(255, 77, 99, .09);
+  }
+  .chain-banner.broken::before { background: var(--red); box-shadow: 0 0 10px rgba(255, 77, 99, .8); }
+  .chain-banner.neutral {
+    color: var(--gold);
+    border-color: rgba(232, 182, 76, .35);
+    background: rgba(232, 182, 76, .06);
+  }
+  .chain-banner.neutral::before { background: var(--gold); }
+  .audit-table { padding: 12px 16px 16px; overflow-x: auto; }
+  .audit-head, .audit-row {
+    display: grid;
+    grid-template-columns: 52px 78px 132px minmax(120px, 1fr) 66px minmax(120px, 1.5fr) 128px;
+    gap: 9px;
+    align-items: center;
+    padding: 8px 9px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+  }
+  .audit-head {
+    color: var(--dim);
+    font-size: 8.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 9px;
+  }
+  .audit-row { border-bottom: 1px solid rgba(26, 42, 58, .5); color: var(--muted); }
+  .audit-row:hover { background: rgba(255, 255, 255, .02); }
+  .audit-row .a-id { color: var(--dim); }
+  .audit-row .a-call { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .audit-row .a-reason { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .audit-row .a-hash { color: var(--cyan); opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .audit-row.is-broken { background: rgba(255, 77, 99, .08); }
+
+  /* ---------------- Footer / toast ---------------- */
+  footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .06em;
+    color: var(--dim);
+  }
+  #toasts {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: min(380px, calc(100vw - 40px));
+  }
+  .toast {
+    padding: 11px 14px;
+    border: 1px solid var(--line-bright);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    background: rgba(10, 17, 25, .97);
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.45;
+    box-shadow: var(--shadow);
+    animation: toastIn .18s ease-out 1;
+  }
+  .toast.error { border-left-color: var(--red); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width: 1180px) {
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .workspace { grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); }
+    .feed-head, .feed-row { grid-template-columns: 58px 100px minmax(96px, 1fr) 58px 58px; }
+    .f-reason { display: none; }
+  }
+  @media (max-width: 940px) {
+    .workspace { grid-template-columns: 1fr; }
+    .feed-panel { min-height: 0; }
+    .feed { height: 420px; }
+    .audit-panel { grid-column: auto; }
+  }
+  @media (max-width: 720px) {
+    .topbar { padding: 12px 14px; align-items: flex-start; flex-direction: column; gap: 10px; }
+    .shell { padding: 14px 14px 30px; }
+    .header-right { justify-content: flex-start; }
+    .brand h1 { font-size: 16px; white-space: normal; }
+    .brand h1 .ar { font-size: 17px; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-value { font-size: 24px; }
+    .feed-head, .feed-row { grid-template-columns: 54px minmax(90px, 1fr) 58px 56px; padding-left: 12px; padding-right: 12px; }
+    .feed-row .f-agent { display: none; }
+    .audit-head, .audit-row { grid-template-columns: 44px 66px minmax(110px, 1fr) 58px; }
+    .audit-head .a-agent, .audit-row .a-agent,
+    .audit-head .a-reason, .audit-row .a-reason,
+    .audit-head .a-hash, .audit-row .a-hash { display: none; }
+    .panel-head { flex-wrap: wrap; }
+    .kill-banner { align-items: flex-start; }
+    .audit-toolbar { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="brand-mark" src="./logo.png" alt="" aria-hidden="true">
+    <div>
+      <h1>Ayn al-Saqr <span class="ar" lang="ar" dir="rtl">عين الصقر</span></h1>
+      <p>Task Firewall · Government Data Gateway</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="pill" id="clock">--:--:--</span>
+    <span class="pill" id="conn"><span id="connText">CONNECTING</span></span>
+    <span class="pill">GATEWAY · LOCAL</span>
+  </div>
+</header>
+
+<div class="shell">
+
+  <div id="killBanner" class="kill-banner hidden" role="alert" aria-live="assertive">
+    <div class="kill-icon" aria-hidden="true">!</div>
+    <div class="kill-copy">
+      <strong id="killTitle">Agent revoked. No data left the building.</strong>
+      <span id="killDetail">kill_switch</span>
+    </div>
+    <button id="killDismiss" class="btn btn-ghost small" type="button">Dismiss</button>
+  </div>
+
+  <section class="stats" aria-label="Gateway statistics">
+    <div class="stat is-cyan">
+      <div class="stat-label">Total Calls</div>
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-sub">through the gateway</div>
+    </div>
+    <div class="stat is-red">
+      <div class="stat-label">Attacks Blocked</div>
+      <div class="stat-value red" id="statBlocked">0</div>
+      <div class="stat-sub">denied at the policy layer</div>
+    </div>
+    <div class="stat is-red">
+      <div class="stat-label">Agents Revoked</div>
+      <div class="stat-value red" id="statRevoked">0</div>
+      <div class="stat-sub">kill switch + manual</div>
+    </div>
+    <div class="stat is-green">
+      <div class="stat-label">Added Latency</div>
+      <div class="stat-value green" id="statLatency">0.0<span class="unit">ms</span></div>
+      <div class="stat-sub">average, gateway overhead</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">False Positives</div>
+      <div class="stat-value" id="statFp">0</div>
+      <div class="stat-sub">legitimate calls denied</div>
+    </div>
+  </section>
+
+  <main class="workspace">
+
+    <section class="panel agents-panel">
+      <div class="panel-head">
+        <div class="panel-title">Enforcement Points</div>
+        <div class="panel-meta" id="agentCount">2 AGENTS</div>
+      </div>
+      <div class="panel-body">
+        <div id="agentCards">
+          <div class="feed-empty">Loading agent registry…</div>
+        </div>
+
+        <div class="controls">
+          <div class="control-row">
+            <button id="btnReset" class="btn btn-ghost" type="button">Reset Demo</button>
+            <button id="btnBenefits" class="btn btn-ghost" type="button">Start Benefits Agent</button>
+          </div>
+          <div class="control-note">
+            Attack opens the poisoned case file with <span class="mono">casefile-agent-02</span>.
+            The agent will try to read the citizen list; the gateway denies it and revokes the agent.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel feed-panel">
+      <div class="panel-head">
+        <div class="panel-title is-green">Live Call Feed</div>
+        <div class="panel-meta"><span id="feedCount">0</span> EVENTS · SSE</div>
+      </div>
+      <div class="feed" id="feed" aria-live="polite">
+        <div class="feed-empty">
+          <strong>Awaiting gateway traffic.</strong><br>
+          The benefits agent should appear here shortly. If the feed stays quiet,
+          press <em>Start Benefits Agent</em>.
+        </div>
+      </div>
+    </section>
+
+    <section class="panel audit-panel">
+      <div class="panel-head">
+        <div class="panel-title">Audit Ledger · SHA-256 Chain</div>
+        <div class="audit-toolbar">
+          <button id="btnVerify" class="btn btn-primary small" type="button">Verify Chain</button>
+          <!-- <button id="btnTamper" class="btn btn-danger-ghost small" type="button">Tamper</button> -->
+        </div>
+      </div>
+      <div id="chainBanner" class="chain-banner neutral" role="status" aria-live="polite">
+        Chain not yet verified — every decision is chained; press Verify Chain.
+      </div>
+      <div class="audit-table">
+        <div class="audit-head" aria-hidden="true">
+          <span>#</span><span>Time</span><span class="a-agent">Agent</span>
+          <span>Resource:Action</span><span>Decision</span>
+          <span class="a-reason">Reason</span><span class="a-hash">Hash</span>
+        </div>
+        <div id="auditRows">
+          <div class="audit-empty"><strong>No decisions recorded yet.</strong><br>Start the benefits agent to populate the ledger.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>AYN AL-SAQAR · عين الصقر · PROTOTYPE · RULES LIVE OUTSIDE THE AGENT</span>
+    <span>policy.yaml re-read on every call · HS256 task tokens · SQLite WAL</span>
+  </footer>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const state = {
+    agents: [],
+    feedCount: 0,
+    attackBusy: false,
+    benefitsBusy: false,
+    statsTimer: null,
+    everConnected: false
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const feedEl = $("feed");
+  const auditRowsEl = $("auditRows");
+  const chainBannerEl = $("chainBanner");
+  const killBannerEl = $("killBanner");
+
+  function h(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return "--:--:--";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "--:--:--";
+    return d.toLocaleTimeString([], { hour12: false });
+  }
+
+  function shortHash(hash) {
+    return hash ? String(hash).slice(0, 12) + "…" : "—";
+  }
+
+  function isKillEvent(entry) {
+    return Boolean(entry && entry.reason && String(entry.reason).indexOf("kill_switch") === 0);
+  }
+
+  async function api(path, options) {
+    const opts = Object.assign({ headers: { "Content-Type": "application/json" } }, options || {});
+    try {
+      const res = await fetch(path, opts);
+      let data = null;
+      try { data = await res.json(); } catch (_) { data = {}; }
+      return { ok: res.ok, status: res.status, data: data || {} };
+    } catch (err) {
+      return { ok: false, status: 0, data: {}, error: String(err) };
+    }
+  }
+
+  function toast(message, isError) {
+    const el = h("div", "toast" + (isError ? " error" : ""), message);
+    $("toasts").appendChild(el);
+    setTimeout(() => { el.remove(); }, 5000);
+  }
+
+  /* ------------------------------ stats ------------------------------ */
+  function setStat(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value;
+  }
+
+  function formatLatency(value) {
+    const num = Number(value || 0);
+    return num.toFixed(1) + " ms";
+  }
+
+  async function refreshStats() {
+    const r = await api("/stats");
+    if (!r.ok) return;
+    const s = r.data || {};
+    setStat("statTotal", s.total_calls || 0);
+    setStat("statBlocked", s.attacks_blocked || 0);
+    setStat("statRevoked", s.agents_revoked || 0);
+    const latencyEl = $("statLatency");
+    if (latencyEl) {
+      latencyEl.replaceChildren(
+        document.createTextNode(Number(s.avg_latency_ms || 0).toFixed(1)),
+        h("span", "unit", "ms")
+      );
+    }
+    setStat("statFp", s.false_positives || 0);
+  }
+
+  function refreshStatsSoon() {
+    if (state.statsTimer) return;
+    state.statsTimer = setTimeout(() => {
+      state.statsTimer = null;
+      refreshStats();
+    }, 450);
+  }
+
+  /* ------------------------------ agents ------------------------------ */
+  function metaRow(label, value, mono) {
+    const row = h("div", "meta-row");
+    row.appendChild(h("dt", "", label));
+    const dd = h("dd", mono ? "mono" : "", value);
+    dd.title = String(value);
+    row.appendChild(dd);
+    return row;
+  }
+
+  function agentCard(agent) {
+    const isActive = agent.status === "active";
+    const card = h("article", "agent-card " + (isActive ? "is-active" : "is-revoked"));
+
+    const head = h("div", "agent-head");
+    const nameWrap = h("div", "agent-name");
+    nameWrap.appendChild(h("h3", "", agent.name || agent.agent_id));
+    nameWrap.appendChild(h("div", "agent-id mono", agent.agent_id));
+    head.appendChild(nameWrap);
+    head.appendChild(h("span", "badge " + (isActive ? "ok" : "bad"), isActive ? "ACTIVE" : "REVOKED"));
+    card.appendChild(head);
+
+    card.appendChild(h("div", "agent-dept", agent.owner_department || ""));
+
+    const meta = h("div", "agent-meta");
+    meta.appendChild(metaRow("Task", agent.current_task || "idle"));
+    meta.appendChild(metaRow(
+      "Scopes",
+      agent.current_scopes && agent.current_scopes.length ? agent.current_scopes.join(" · ") : "—",
+      true
+    ));
+    meta.appendChild(metaRow("Last call", agent.last_call || "—", true));
+    meta.appendChild(metaRow("Last seen", agent.last_activity ? fmtTime(agent.last_activity) : "—"));
+    card.appendChild(meta);
+
+    if (!isActive && agent.revoked_reason) {
+      const reason = h("div", "revoked-reason", "Revoked: " + agent.revoked_reason);
+      reason.title = agent.revoked_reason;
+      card.appendChild(reason);
+    }
+
+    const actions = h("div", "agent-actions");
+    if (isActive) {
+      const btn = h("button", "btn btn-danger-ghost small", "Revoke agent");
+      btn.type = "button";
+      btn.addEventListener("click", () => revokeAgent(agent.agent_id, btn));
+      actions.appendChild(btn);
+    } else {
+      const btn = h("button", "btn btn-ghost small", "Reinstate");
+      btn.type = "button";
+      btn.addEventListener("click", () => reinstateAgent(agent.agent_id, btn));
+      actions.appendChild(btn);
+    }
+    card.appendChild(actions);
+    return card;
+  }
+
+  function renderAgents() {
+    const container = $("agentCards");
+    container.replaceChildren();
+    if (!state.agents.length) {
+      container.appendChild(h("div", "feed-empty", "No agents registered."));
+    }
+    state.agents.forEach((agent) => container.appendChild(agentCard(agent)));
+    $("agentCount").textContent = state.agents.length + " AGENT" + (state.agents.length === 1 ? "" : "S");
+  }
+
+  async function refreshAgents() {
+    const r = await api("/agents");
+    if (!r.ok) return;
+    state.agents = (r.data && r.data.agents) || [];
+    renderAgents();
+  }
+
+  async function revokeAgent(agentId, button) {
+    button.disabled = true;
+    button.textContent = "Revoking…";
+    const r = await api("/agents/" + encodeURIComponent(agentId) + "/revoke", { method: "POST" });
+    if (!r.ok) {
+      toast("Could not revoke " + agentId, true);
+      button.disabled = false;
+      button.textContent = "Revoke agent";
+      return;
+    }
+    toast("Agent " + agentId + " revoked. Every subsequent call will be denied.");
+    await refreshAgents();
+    await refreshStats();
+  }
+
+  async function reinstateAgent(agentId, button) {
+    button.disabled = true;
+    button.textContent = "Reinstating…";
+    const r = await api("/agents/" + encodeURIComponent(agentId) + "/reinstate", { method: "POST" });
+    if (!r.ok) {
+      toast("Could not reinstate " + agentId, true);
+      button.disabled = false;
+      button.textContent = "Reinstate";
+      return;
+    }
+    toast("Agent " + agentId + " reinstated.");
+    await refreshAgents();
+    await refreshStats();
+  }
+
+  /* ------------------------------ feed ------------------------------ */
+  function addFeed(entry, options) {
+    const opts = options || {};
+    const empty = feedEl.querySelector(".feed-empty");
+    if (empty) empty.remove();
+
+    const denied = entry.decision === "deny";
+    const kill = isKillEvent(entry);
+    const row = h("div", "feed-row " + (denied ? "is-deny" : "is-allow") + (kill ? " is-kill" : ""));
+
+    row.appendChild(h("span", "f-time", fmtTime(entry.timestamp)));
+    row.appendChild(h("span", "f-agent", entry.agent_id || "—"));
+
+    const call = h("span", "f-call", (entry.resource || "?") + ":" + (entry.action || "?"));
+    call.title = entry.tool ? "tool: " + entry.tool : "";
+    row.appendChild(call);
+
+    row.appendChild(h("span", "decision " + (denied ? "deny" : "allow"), denied ? "DENY" : "ALLOW"));
+
+    const reason = entry.reason || (denied ? "denied" : "in policy");
+    const reasonEl = h("span", "f-reason", reason);
+    reasonEl.title = reason;
+    row.appendChild(reasonEl);
+
+    row.appendChild(h("span", "f-lat", Number(entry.latency_ms || 0).toFixed(1) + " ms"));
+
+    if (opts.prepend === false) {
+      feedEl.appendChild(row);
+    } else {
+      feedEl.prepend(row);
+    }
+
+    state.feedCount += 1;
+    $("feedCount").textContent = state.feedCount;
+
+    while (feedEl.children.length > 160) {
+      feedEl.lastElementChild.remove();
+    }
+  }
+
+  async function hydrateFeed() {
+    const r = await api("/audit?limit=40");
+    if (!r.ok) return;
+    const entries = (r.data && r.data.entries) || [];
+    entries.forEach((entry) => addFeed(entry, { prepend: false, replay: true }));
+  }
+
+  /* ------------------------------ audit ------------------------------ */
+  function auditRow(entry) {
+    const row = h("div", "audit-row");
+    row.appendChild(h("span", "a-id", "#" + entry.id));
+    row.appendChild(h("span", "", fmtTime(entry.timestamp)));
+    row.appendChild(h("span", "a-agent", entry.agent_id || "—"));
+
+    const call = h("span", "a-call", (entry.resource || "?") + ":" + (entry.action || "?"));
+    call.title = entry.resource + ":" + entry.action;
+    row.appendChild(call);
+
+    const denied = entry.decision === "deny";
+    row.appendChild(h("span", "decision " + (denied ? "deny" : "allow"), denied ? "DENY" : "ALLOW"));
+
+    const reason = entry.reason || "in policy";
+    const reasonEl = h("span", "a-reason", reason);
+    reasonEl.title = reason;
+    row.appendChild(reasonEl);
+
+    const hash = h("span", "a-hash", shortHash(entry.hash));
+    hash.title = entry.hash || "";
+    row.appendChild(hash);
+    return row;
+  }
+
+  async function refreshAudit() {
+    const r = await api("/audit?limit=10");
+    if (!r.ok) return;
+    const entries = (r.data && r.data.entries) || [];
+    auditRowsEl.replaceChildren();
+    if (!entries.length) {
+      const empty = h("div", "audit-empty");
+      empty.appendChild(h("strong", "", "No decisions recorded yet."));
+      empty.appendChild(document.createElement("br"));
+      empty.appendChild(document.createTextNode("Start the benefits agent to populate the ledger."));
+      auditRowsEl.appendChild(empty);
+      return;
+    }
+    entries.forEach((entry) => auditRowsEl.appendChild(auditRow(entry)));
+  }
+
+  function setChainBanner(kind, text) {
+    chainBannerEl.className = "chain-banner " + kind;
+    chainBannerEl.textContent = text;
+  }
+
+  async function verifyChain(button) {
+    if (button) button.disabled = true;
+    const r = await api("/audit/verify");
+    if (button) button.disabled = false;
+    if (!r.ok) {
+      setChainBanner("broken", "Verification request failed.");
+      toast("Could not verify the chain", true);
+      return;
+    }
+    const v = r.data || {};
+    if (v.valid) {
+      setChainBanner(
+        "valid",
+        "CHAIN VALID · " + v.checked + " entries verified · head " + shortHash(v.head_hash)
+      );
+      toast("Audit chain valid: " + v.checked + " entries.");
+    } else {
+      const entryNumber = (v.first_broken_index === null || v.first_broken_index === undefined)
+        ? "?"
+        : Number(v.first_broken_index) + 1;
+      setChainBanner(
+        "broken",
+        "CHAIN BROKEN at entry #" + entryNumber + " · " + v.checked + " entries checked · recomputation mismatch"
+      );
+      toast("Tampering detected at entry #" + entryNumber, true);
+      const rows = auditRowsEl.querySelectorAll(".audit-row");
+      rows.forEach((row, index) => {
+        row.classList.toggle("is-broken", index === Number(v.first_broken_index));
+      });
+    }
+  }
+
+  async function tamperLedger(button) {
+    button.disabled = true;
+    const r = await api("/demo/tamper", { method: "POST" });
+    button.disabled = false;
+    if (!r.ok || !r.data.tampered) {
+      toast(r.data && r.data.error ? r.data.error : "Nothing to tamper with", true);
+      return;
+    }
+    setChainBanner(
+      "neutral",
+      "Ledger row #" + r.data.entry_id + " altered without re-hashing — run Verify Chain to expose it."
+    );
+    toast("Audit row #" + r.data.entry_id + " tampered (demo only).");
+    await refreshAudit();
+  }
+
+  /* ------------------------------ kill banner ------------------------------ */
+  function showKillBanner(event) {
+    const latency = event && event.latency_ms !== undefined && event.latency_ms !== null
+      ? Number(event.latency_ms).toFixed(1)
+      : "under 1000";
+    $("killTitle").textContent =
+      "Agent revoked in " + latency + "ms. No data left the building.";
+    const parts = [];
+    if (event && event.agent_id) parts.push(event.agent_id);
+    if (event && event.reason) parts.push(event.reason);
+    parts.push("blocked before backend access");
+    $("killDetail").textContent = parts.join(" · ");
+    killBannerEl.classList.remove("hidden");
+    // Restart the pulse animation if the banner is already visible.
+    killBannerEl.style.animation = "none";
+    void killBannerEl.offsetWidth;
+    killBannerEl.style.animation = "";
+    refreshAgents();
+    refreshStats();
+  }
+
+  function hideKillBanner() {
+    killBannerEl.classList.add("hidden");
+  }
+
+  /* ------------------------------ SSE ------------------------------ */
+  function setConnection(online, label) {
+    const pill = $("conn");
+    pill.classList.toggle("live", online);
+    pill.classList.toggle("offline", !online);
+    $("connText").textContent = label;
+  }
+
+  function handleEvent(event) {
+    if (!event || !event.type) return;
+    if (event.type === "call") {
+      addFeed(event);
+      refreshStatsSoon();
+      if (event.revoked) refreshAgents();
+    } else if (event.type === "kill") {
+      showKillBanner(event);
+    } else if (event.type === "revocation") {
+      if (isKillEvent(event)) showKillBanner(event);
+      refreshAgents();
+      refreshStats();
+    } else if (event.type === "attack_started") {
+      toast("Poisoned case file opened by " + (event.agent_id || "casefile-agent-02") + ".");
+      refreshAgents();
+    } else if (event.type === "agent_update") {
+      refreshAgents();
+    } else if (event.type === "reset") {
+      resetUi();
+    }
+  }
+
+  function connectEvents() {
+    if (!window.EventSource) {
+      setConnection(false, "NO SSE");
+      return;
+    }
+    const source = new EventSource("/events");
+    source.onopen = () => {
+      setConnection(true, "LIVE");
+      if (state.everConnected) {
+        refreshAgents();
+        refreshStats();
+        refreshAudit();
+      }
+      state.everConnected = true;
+    };
+    source.onerror = () => setConnection(false, "RECONNECTING");
+    source.onmessage = (message) => {
+      try {
+        handleEvent(JSON.parse(message.data));
+      } catch (_) { /* ignore malformed events */ }
+    };
+  }
+
+  /* ------------------------------ actions ------------------------------ */
+  function setAttackBusy(busy, label) {
+    state.attackBusy = busy;
+    const btn = $("btnAttack");
+    btn.disabled = busy;
+    btn.querySelector(".btn-label").textContent = busy ? (label || "Attack running…") : "Trigger Attack";
+  }
+
+  async function triggerAttack() {
+    if (state.attackBusy) return;
+    setAttackBusy(true);
+    const r = await api("/demo/trigger-attack", { method: "POST" });
+    if (!r.ok) {
+      toast("Could not launch the attack agent", true);
+      setAttackBusy(false);
+      return;
+    }
+    if (r.data.status === "already_running") {
+      toast("Attack agent is already running.");
+      setTimeout(() => setAttackBusy(false), 3000);
+      return;
+    }
+    const source = r.data.source === "external"
+      ? "external attacker service at " + r.data.attacker
+      : "embedded gateway launcher";
+    toast("Attack launched via " + source +
+      ": casefile-agent-02 is reading the poisoned file (" +
+      (r.data.mode === "llm" ? "LLM mode" : "scripted mode") + ").");
+    setTimeout(() => setAttackBusy(false), 12000);
+  }
+
+  function setBenefitsBusy(busy) {
+    state.benefitsBusy = busy;
+    const btn = $("btnBenefits");
+    btn.disabled = busy;
+    btn.textContent = busy ? "Starting…" : "Start Benefits Agent";
+  }
+
+  async function startBenefits() {
+    if (state.benefitsBusy) return;
+    setBenefitsBusy(true);
+    const r = await api("/demo/start-benefits", { method: "POST" });
+    setBenefitsBusy(false);
+    if (!r.ok) {
+      toast("Could not start the benefits agent", true);
+      return;
+    }
+    toast(r.data.status === "already_running"
+      ? "Benefits agent is already live."
+      : "Benefits agent started. Green traffic incoming.");
+    refreshAgents();
+  }
+
+  function resetUi() {
+    feedEl.replaceChildren();
+    const empty = h("div", "feed-empty");
+    empty.appendChild(h("strong", "", "Awaiting gateway traffic."));
+    empty.appendChild(document.createElement("br"));
+    empty.appendChild(document.createTextNode("Reset complete. Start the benefits agent or wait for it to resume."));
+    feedEl.appendChild(empty);
+    state.feedCount = 0;
+    $("feedCount").textContent = "0";
+    hideKillBanner();
+    setChainBanner("neutral", "Ledger reset — press Verify Chain once new traffic arrives.");
+    auditRowsEl.replaceChildren();
+    const auditEmpty = h("div", "audit-empty");
+    auditEmpty.appendChild(h("strong", "", "Ledger cleared."));
+    auditEmpty.appendChild(document.createElement("br"));
+    auditEmpty.appendChild(document.createTextNode("New decisions will chain from 64 zeros."));
+    auditRowsEl.appendChild(auditEmpty);
+    refreshAgents();
+    refreshStats();
+  }
+
+  async function resetDemo() {
+    const btn = $("btnReset");
+    btn.disabled = true;
+    btn.textContent = "Resetting…";
+    const r = await api("/demo/reset", { method: "POST" });
+    btn.disabled = false;
+    btn.textContent = "Reset Demo";
+    if (!r.ok) {
+      toast("Reset failed", true);
+      return;
+    }
+    resetUi();
+    toast("Demo reset: agents active, audit log cleared, counters zeroed.");
+  }
+
+  /* ------------------------------ init ------------------------------ */
+  function tickClock() {
+    const now = new Date();
+    $("clock").textContent = now.toLocaleTimeString([], { hour12: false });
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    const attackButton = $("btnAttack");
+    if (attackButton) attackButton.addEventListener("click", triggerAttack);
+    $("btnReset").addEventListener("click", resetDemo);
+    $("btnBenefits").addEventListener("click", startBenefits);
+    $("killDismiss").addEventListener("click", hideKillBanner);
+    $("btnVerify").addEventListener("click", (e) => verifyChain(e.currentTarget));
+    const tamperButton = $("btnTamper");
+    if (tamperButton) {
+      tamperButton.addEventListener("click", (e) => tamperLedger(e.currentTarget));
+    }
+
+    await Promise.all([refreshAgents(), refreshStats(), refreshAudit()]);
+    await hydrateFeed();
+    connectEvents();
+
+    // Fallback polling keeps the tiles fresh even if SSE is interrupted.
+    setInterval(refreshStats, 5000);
+    setInterval(refreshAgents, 8000);
+  });
+})();
+</script>
+</body>
+</html>
